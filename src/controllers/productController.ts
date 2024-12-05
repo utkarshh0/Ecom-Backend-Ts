@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import Order from "../models/orderModel";
 import Product from "../models/productModel";
 
 // Create a new product
@@ -59,3 +60,36 @@ export const getProductById = async (req : Request, res: Response): Promise<any>
 
   res.status(201).json(product);
 }
+
+// Get User by products
+export const getUsersByProduct = async (req: Request, res: Response): Promise<any> => {
+  const productId = req.params.id;
+
+  console.log(productId)
+  // Find orders for the specific product
+  const orders = await Order.find({ product: productId }).populate("user", "name email");
+
+  if (!orders.length) {
+    return res.status(404).json({ message: "No users found for this product" });
+  }
+
+  // Extract unique users from orders
+  const users = Array.from(new Set(orders.map(order => order.user)));
+
+  res.status(200).json(users);
+};
+
+// Get total stock quantity for all products combined
+export const getTotalStock = async (req: Request, res: Response) => {
+  try {
+    // Fetch all products
+    const products = await Product.find();
+
+    // Traverse and calculate the total stock
+    const totalStock = products.reduce((total, product) => total + product.stock, 0);
+
+    res.status(200).json({ totalStock });
+  } catch (error) {
+    res.status(500).json({ message: "Error calculating total stock", error });
+  }
+};
